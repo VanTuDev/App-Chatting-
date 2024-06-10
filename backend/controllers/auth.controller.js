@@ -1,7 +1,7 @@
 // Import model User từ file user.model.js để tương tác với cơ sở dữ liệu MongoDB
 import bcryptjs from "bcryptjs";
 import User from "../models/user.model.js";
-// import generateTokenAndSetCookie from "../ultils/generateTokenAndSetCookie.js";
+import generateTokenAndSetCookie from "../ultils/generateToken.js";
 // Hàm signup để xử lý việc đăng ký người dùng mới
 export const signup = async (req, res) => {
   try {
@@ -39,7 +39,7 @@ export const signup = async (req, res) => {
     if (newUser) {
       //General JWT token here
       // Lưu người dùng mới vào cơ sở dữ liệu
-      // await generateTokenAndSetCookie(newUser.id, res);
+      await generateTokenAndSetCookie(newUser.id, res);
       await newUser.save();
       // Trả về phản hồi thành công với thông tin người dùng mới
       res.status(201).json({
@@ -47,7 +47,7 @@ export const signup = async (req, res) => {
         username: newUser.username,
         profilePic: newUser.profilePic,
       });
-      console.log("success");
+      console.log("success signup");
     } else {
       res.status(201).json({ error: "Invalid user data" });
     }
@@ -59,13 +59,49 @@ export const signup = async (req, res) => {
 };
 
 // Hàm login để xử lý việc đăng nhập người dùng
-export const login = (req, res) => {
-  console.log("loginUser"); // Ghi log việc đăng nhập
-  res.send("User logged in!"); // Trả về phản hồi đăng nhập thành công
+
+export const login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    const isPasswordCorrect = await bcryptjs.compare(
+      password,
+      user?.password || ""
+    );
+    if (!user || !isPasswordCorrect) {
+      return res.status(400).json({
+        error:
+          "Invalid user or password" +
+          console.log("Ban da sai o muc nao do trong password hoac user"),
+      });
+    }
+
+    generateTokenAndSetCookie(user._id, res);
+    res.status(200).json({
+      _id: user._id,
+      fullname: user.fullname,
+      username: user.username,
+      profilePic: user.profilePic,
+      gender: user.gender,
+    });
+    console.log("success login");
+  } catch (error) {
+    // Nếu có lỗi xảy ra trong quá trình đăng nhập, ghi log lỗi và trả về lỗi server
+    console.log("Error in login Controller", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 // Hàm logout để xử lý việc đăng xuất người dùng
 export const logout = (req, res) => {
-  console.log("logoutUser"); // Ghi log việc đăng xuất
-  res.send("User logged out!"); // Trả về phản hồi đăng xuất thành công
+  try {
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out Successfully" });
+    console.log("dang xuat thanh cong");
+  } catch (error) {
+    console.log(
+      "Error in logout Controller" + console.log("da bi loi") + error.message
+    );
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };

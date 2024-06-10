@@ -2,21 +2,21 @@
 import express from "express";
 // dotenv: Module để đọc các biến môi trường từ file .env.
 import dotenv from "dotenv";
-//import authRoutes from "./routes/auth.routes.js";
+
 import authRoutes from "./routes/auth.routes.js";
-//connectToMongoDB: Hàm để kết nối đến cơ sở dữ liệu MongoDB.
+import MessageRoutes from "./routes/message.routes.js";
 import connectToMongoDB from "./db/connectToMongoDB.js";
-import adminRoutes from "./routes/admin.routes.js"; // Thêm dòng này
+
+import cookieParser from "cookie-parser";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 dotenv.config();
 app.use(express.json());
-app.get("/", (req, res) => {
-  res.send("Hello World!!");
-});
+app.use(cookieParser());
+
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes); // Thêm dòng này
+app.use("/api/messages", MessageRoutes);
 
 // Connect to MongoDB
 connectToMongoDB()
