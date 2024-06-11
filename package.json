@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "server": " nodemon backend/server.js ",
-     "start": "nodemon server.js"
-    
+    "start": "nodemon server.js"
   },
   "type": "module",
   "keywords": [],
