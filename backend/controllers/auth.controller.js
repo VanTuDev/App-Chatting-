@@ -2,6 +2,7 @@
 import bcryptjs from "bcryptjs";
 import User from "../models/user.model.js";
 import generateTokenAndSetCookie from "../ultils/generateToken.js";
+
 // Hàm signup để xử lý việc đăng ký người dùng mới
 export const signup = async (req, res) => {
   try {
@@ -10,13 +11,15 @@ export const signup = async (req, res) => {
 
     // Kiểm tra xem mật khẩu và xác nhận mật khẩu có khớp nhau không
     if (password !== confirmPassword) {
-      return res.status(400).json({ errors: "Passwords don't match" }); // Nếu không khớp, trả về lỗi
+      return res
+        .status(400)
+        .json({ error: "Mật khẩu và xác nhận mật khẩu không khớp" }); // Nếu không khớp, trả về lỗi
     }
 
     // Kiểm tra xem người dùng với username đã tồn tại trong cơ sở dữ liệu chưa
     const user = await User.findOne({ username });
     if (user) {
-      return res.status(400).json({ error: "User already exists" }); // Nếu tồn tại, trả về lỗi
+      return res.status(400).json({ error: "Người dùng đã tồn tại" }); // Nếu tồn tại, trả về lỗi
     }
 
     // HASH PASSWORD
@@ -37,7 +40,7 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      //General JWT token here
+      // Tạo JWT token tại đây
       // Lưu người dùng mới vào cơ sở dữ liệu
       await generateTokenAndSetCookie(newUser.id, res);
       await newUser.save();
@@ -47,48 +50,42 @@ export const signup = async (req, res) => {
         username: newUser.username,
         profilePic: newUser.profilePic,
       });
-      console.log("success signup");
+      console.log("Đăng ký thành công");
     } else {
-      res.status(201).json({ error: "Invalid user data" });
+      res.status(400).json({ error: "Dữ liệu người dùng không hợp lệ" });
     }
   } catch (error) {
     // Nếu có lỗi xảy ra trong quá trình đăng ký, ghi log lỗi và trả về lỗi server
-    console.log("Error signup Controller", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.log("Lỗi trong quá trình đăng ký", error.message);
+    res.status(500).json({ error: "Lỗi máy chủ nội bộ" });
   }
 };
 
 // Hàm login để xử lý việc đăng nhập người dùng
-
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
-    const isPasswordCorrect = await bcryptjs.compare(
-      password,
-      user?.password || ""
-    );
-    if (!user || !isPasswordCorrect) {
-      return res.status(400).json({
-        error:
-          "Invalid user or password" +
-          console.log("Ban da sai o muc nao do trong password hoac user"),
-      });
+    if (!user) {
+      return res.status(400).json({ error: "Người dùng không tồn tại" });
+    }
+
+    const isPasswordCorrect = await bcryptjs.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ error: "Mật khẩu không chính xác" });
     }
 
     generateTokenAndSetCookie(user._id, res);
+
     res.status(200).json({
       _id: user._id,
       fullname: user.fullname,
       username: user.username,
       profilePic: user.profilePic,
-      gender: user.gender,
     });
-    console.log("success login");
   } catch (error) {
-    // Nếu có lỗi xảy ra trong quá trình đăng nhập, ghi log lỗi và trả về lỗi server
-    console.log("Error in login Controller", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.log("Lỗi trong quá trình đăng nhập", error.message);
+    res.status(500).json({ error: "Lỗi máy chủ nội bộ" });
   }
 };
 
@@ -96,9 +93,9 @@ export const login = async (req, res) => {
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
-    res.status(200).json({ message: "Logged out successfully" });
+    res.status(200).json({ message: "Đăng xuất thành công" });
   } catch (error) {
-    console.log("Error in logout Controller", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.log("Lỗi trong quá trình đăng xuất", error.message);
+    res.status(500).json({ error: "Lỗi máy chủ nội bộ" });
   }
 };
